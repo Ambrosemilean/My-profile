@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>St. Columba's College, Amaimo | Complete School Management System</title>
+  <!-- Google Fonts + Tailwind CSS + Lucide Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * { scroll-behavior: smooth; }
+    body { font-family: 'Lato', sans-serif; }
+    h1, h2, h3, h4, .font-playfair { font-family: 'Playfair Display', serif; }
+    .gold-text { color: #c9a84c; }
+    .bg-gold { background-color: #c9a84c; }
+    .border-gold { border-color: #c9a84c; }
+    .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .card-hover:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.1); }
+    @keyframes fadeUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+    .fade-up { animation: fadeUp 0.6s ease forwards; }
+    .dashboard-card { transition: all 0.2s; }
+    .dashboard-card:hover { background: #f9fafb; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="bg-white text-gray-800">
+
+<div id="root"></div>
+
+<script>
+  // ============================================================
+  //  COMPLETE DATA MODEL WITH STUDENT CODE SYSTEM
+  // ============================================================
+  
+  // Helper to generate unique student code (SCC/YYYY/XXXX)
+  function generateStudentCode() {
+    const year = new Date().getFullYear();
+    const lastStudent = appState.students.filter(s => s.admissionNo.startsWith(`SCC/${year}`)).length;
+    const num = String(lastStudent + 1).padStart(4, '0');
+    return `SCC/${year}/${num}`;
+  }
+
+  const initialData = {
+    // Active students (approved applications)
+    students: [
+      { id: 1, name: "Okonkwo Chinedu", admissionNo: "SCC/2024/0001", class: "SSS 3", gender: "Male", status: "Active", email: "chinedu.okonkwo@example.com", parentEmail: "mr.okonkwo@example.com", studentCode: "CHINEDU2024", password: "CHINEDU2024" },
+      { id: 2, name: "Nwosu Amarachi", admissionNo: "SCC/2024/0002", class: "SSS 2", gender: "Female", status: "Active", email: "amarachi.nwosu@example.com", parentEmail: "mrs.nwosu@example.com", studentCode: "AMARACHI2024", password: "AMARACHI2024" },
+    ],
+    teachers: [
+      { id: 1, name: "Dr. Emmanuel Obi", subject: "Mathematics", qualification: "Ph.D. Mathematics" },
+      { id: 2, name: "Mrs. Grace Okafor", subject: "English", qualification: "M.A. English" },
+      { id: 3, name: "Mr. Chuka Nwosu", subject: "Physics", qualification: "B.Sc. Physics" },
+    ],
+    news: [
+      { id: 1, title: "Inter-House Sports Competition", date: "2024-04-15", excerpt: "Annual sports event brings together all houses for a day of athletic excellence.", image: "🏆 Sports Day" },
+      { id: 2, title: "Science Fair 2024", date: "2024-05-20", excerpt: "Students showcase innovative projects in robotics and renewable energy.", image: "🔬 Science Fair" },
+      { id: 3, title: "Parent-Teacher Conference", date: "2024-03-10", excerpt: "Important meeting for discussing student progress and academic planning.", image: "📚 Meeting" },
+    ],
+    events: [
+      { id: 1, title: "Resumption Day", date: "2024-09-09", description: "Second term begins" },
+      { id: 2, title: "Open Day", date: "2024-10-05", description: "Prospective students and parents welcome" },
+    ],
+    applications: [
+      { id: 1, name: "Adebayo Tolu", class: "SSS 1", parentContact: "08012345678", email: "tolu.adebayo@email.com", status: "Pending", appliedDate: "2024-11-20" },
+      { id: 2, name: "Eze Ifeanyi", class: "JSS 2", parentContact: "08098765432", email: "ifeanyi.eze@email.com", status: "Approved", appliedDate: "2024-11-18", studentCode: "IFEANYI2024", admissionNo: "SCC/2024/0003" },
+      { id: 3, name: "Okafor Adaeze", class: "SSS 2", parentContact: "08045678901", email: "adaeze.okafor@email.com", status: "Pending", appliedDate: "2024-11-21" },
+      { id: 4, name: "Nnamdi Peters", class: "SSS 1", parentContact: "08033334444", email: "peters.nnamdi@email.com", status: "Pending", appliedDate: "2024-11-22" },
+    ],
+    gallery: [
+      { id: 1, title: "Graduation Ceremony", category: "Events" },
+      { id: 2, title: "Science Lab", category: "Facilities" },
+      { id: 3, title: "Sports Day", category: "Sports" },
+      { id: 4, title: "Chapel Service", category: "Spiritual" },
+    ],
+    // Results database: each student has results per term
+    results: [
+      { id: 1, studentId: 1, term: "First Term 2024/2025", subjects: [{ name: "Mathematics", score: 85, grade: "A" }, { name: "English", score: 78, grade: "B+" }, { name: "Physics", score: 88, grade: "A" }], average: 83.7, remark: "Excellent" },
+      { id: 2, studentId: 2, term: "First Term 2024/2025", subjects: [{ name: "Mathematics", score: 92, grade: "A+" }, { name: "English", score: 85, grade: "A" }, { name: "Chemistry", score: 90, grade: "A" }], average: 89, remark: "Outstanding" },
+    ],
+    assignments: [
+      { id: 1, studentId: 1, title: "Mathematics Assignment", subject: "Mathematics", dueDate: "2024-12-10", description: "Solve all quadratic equation problems from Chapter 5", submitted: false, score: null },
+      { id: 2, studentId: 1, title: "English Essay", subject: "English", dueDate: "2024-12-12", description: "Write an essay on 'The Importance of Education'", submitted: true, score: 85 },
+      { id: 3, studentId: 2, title: "Physics Practical Report", subject: "Physics", dueDate: "2024-12-15", description: "Submit lab report on simple pendulum experiment", submitted: false, score: null },
+    ],
+    attendance: [
+      { studentId: 1, date: "2024-11-01", status: "Present" }, { studentId: 1, date: "2024-11-02", status: "Present" }, { studentId: 1, date: "2024-11-03", status: "Present" },
+      { studentId: 2, date: "2024-11-01", status: "Present" }, { studentId: 2, date: "2024-11-02", status: "Absent" }, { studentId: 2, date: "2024-11-03", status: "Present" },
+    ],
+    settings: {
+      schoolName: "St. Columba's College, Amaimo",
+      address: "Amaimo, Ikeduru LGA, Imo State, Nigeria",
+      phone: "+234 803 456 7890",
+      email: "info@stcolumbascollege.edu.ng",
+      motto: "Nurturing Excellence, Building Character"
+    }
+  };
+
+  let appState = {
+    students: [...initialData.students],
+    teachers: [...initialData.teachers],
+    news: [...initialData.news],
+    events: [...initialData.events],
+    applications: [...initialData.applications],
+    gallery: [...initialData.gallery],
+    results: [...initialData.results],
+    assignments: [...initialData.assignments],
+    attendance: [...initialData.attendance],
+    settings: { ...initialData.settings }
+  };
+
+  // UI State
+  let isLoggedIn = false;           // Admin logged in
+  let isStudentLoggedIn = false;
+  let currentStudent = null;
+  let activeDashboardTab = 'overview';
+  let showAdminLoginModal = false;
+  let showStudentLoginModal = false;
+  let mobileMenuOpen = false;
+  let activeSection = 'home';
+  let studentPortalTab = 'dashboard';
+  let counters = { years: 0, students: 0, teachers: 0, passRate: 0 };
+  let counterInterval = null;
+  let applicationFormData = { name: '', dob: '', class: '', parentContact: '', email: '' };
+  
+  // Result management modal state
+  let showResultModal = false;
+  let selectedStudentForResult = null;
+  let resultFormData = { term: '', subjects: [{ name: '', score: 0, grade: '' }] };
+
+  // Helper functions
+  function saveState() { /* in-memory only */ }
+  
+  function updateUI() {
+    const root = document.getElementById('root');
+    if (!root) return;
+    if (isStudentLoggedIn && currentStudent) {
+      root.innerHTML = renderStudentPortal();
+    } else if (isLoggedIn) {
+      root.innerHTML = renderAdminDashboard();
+    } else {
+      root.innerHTML = renderPublicWebsite();
+    }
+    attachGlobalEventListeners();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    if (!isLoggedIn && !isStudentLoggedIn && activeSection === 'statistics') startCounters();
+    else if (counterInterval) clearInterval(counterInterval);
+  }
+
+  function startCounters() {
+    if (counterInterval) clearInterval(counterInterval);
+    counters = { years: 0, students: 0, teachers: 0, passRate: 0 };
+    counterInterval = setInterval(() => {
+      let changed = false;
+      if (counters.years < 25) { counters.years += 1; changed = true; }
+      if (counters.students < 850) { counters.students += 20; if (counters.students > 850) counters.students = 850; changed = true; }
+      if (counters.teachers < 48) { counters.teachers += 1; changed = true; }
+      if (counters.passRate < 98) { counters.passRate += 2; if (counters.passRate > 98) counters.passRate = 98; changed = true; }
+      if (changed) updateUI();
+      else if (counters.years >= 25 && counters.students >= 850 && counters.teachers >= 48 && counters.passRate >= 98) clearInterval(counterInterval);
+    }, 40);
+  }
+
+  // Student Login: using student code (assigned upon approval) as username and password
+  function handleStudentLogin(studentCode, password) {
+    const student = appState.students.find(s => s.studentCode === studentCode && s.password === password);
+    if (student) {
+      currentStudent = student;
+      isStudentLoggedIn = true;
+      showStudentLoginModal = false;
+      studentPortalTab = 'dashboard';
+      updateUI();
+      return true;
+    } else {
+      alert('Invalid Student Code or Password. Please check your credentials.');
+      return false;
+    }
+  }
+
+  // Admin: Approve application and generate student code
+  function approveApplication(application) {
+    // Generate unique student code
+    const studentCode = application.name.substring(0, 3).toUpperCase() + application.class.replace(/\s/g, '') + Math.floor(Math.random() * 1000);
+    const admissionNo = generateStudentCode();
+    const newStudent = {
+      id: Date.now(),
+      name: application.name,
+      admissionNo: admissionNo,
+      class: application.class,
+      gender: "Not specified",
+      status: "Active",
+      email: application.email || `${application.name.toLowerCase().replace(/\s/g, '.')}@student.scc.edu.ng`,
+      parentEmail: application.parentContact + "@parent.com",
+      studentCode: studentCode,
+      password: studentCode  // Student code serves as password
+    };
+    
+    appState.students.push(newStudent);
+    
+    // Update application status
+    const appIndex = appState.applications.findIndex(a => a.id === application.id);
+    if (appIndex !== -1) {
+      appState.applications[appIndex].status = "Approved";
+      appState.applications[appIndex].studentCode = studentCode;
+      appState.applications[appIndex].admissionNo = admissionNo;
+    }
+    
+    // Initialize empty results for this student
+    appState.results.push({
+      id: Date.now(),
+      studentId: newStudent.id,
+      term: "First Term 2024/2025",
+      subjects: [],
+      average: 0,
+      remark: "Not yet graded"
+    });
+    
+    alert(`✅ Application Approved!\n\nStudent Code: ${studentCode}\nPassword: ${studentCode}\n\nShare these credentials with the student for portal access.`);
+    updateUI();
+  }
+  
+  function rejectApplication(applicationId) {
+    const appIndex = appState.applications.findIndex(a => a.id === applicationId);
+    if (appIndex !== -1) {
+      appState.applications[appIndex].status = "Rejected";
+      updateUI();
+      alert("Application rejected.");
+    }
+  }
+  
+  // Admin: Upload/Update student results
+  function openResultModal(student) {
+    selectedStudentForResult = student;
+    const existingResult = appState.results.find(r => r.studentId === student.id && r.term === (resultFormData.term || "First Term 2024/2025"));
+    if (existingResult) {
+      resultFormData = {
+        term: existingResult.term,
+        subjects: [...existingResult.subjects]
+      };
+    } else {
+      resultFormData = {
+        term: "First Term 2024/2025",
+        subjects: [{ name: "", score: 0, grade: "" }]
+      };
+    }
+    showResultModal = true;
+    updateUI();
+  }
+  
+  function addSubjectToResult() {
+    resultFormData.subjects.push({ name: "", score: 0, grade: "" });
+    updateUI();
+  }
+  
+  function updateSubject(index, field, value) {
+    resultFormData.subjects[index][field] = field === 'score' ? parseInt(value) || 0 : value;
+    // Auto-calculate grade based on score
+    if (field === 'score') {
+      const score = parseInt(value) || 0;
+      if (score >= 90) resultFormData.subjects[index].grade = "A+";
+      else if (score >= 80) resultFormData.subjects[index].grade = "A";
+      else if (score >= 70) resultFormData.subjects[index].grade = "B+";
+      else if (score >= 60) resultFormData.subjects[index].grade = "B";
+      else if (score >= 50) resultFormData.subjects[index].grade = "C";
+      else resultFormData.subjects[index].grade = "F";
+    }
+    updateUI();
+  }
+  
+  function saveStudentResult() {
+    const average = resultFormData.subjects.length > 0 
+      ? (resultFormData.subjects.reduce((sum, s) => sum + (s.score || 0), 0) / resultFormData.subjects.length).toFixed(1)
+      : 0;
+    const remark = average >= 75 ? "Excellent" : average >= 60 ? "Good" : average >= 50 ? "Satisfactory" : "Needs Improvement";
+    
+    const existingIndex = appState.results.findIndex(r => r.studentId === selectedStudentForResult.id && r.term === resultFormData.term);
+    const newResult = {
+      id: existingIndex !== -1 ? appState.results[existingIndex].id : Date.now(),
+      studentId: selectedStudentForResult.id,
+      term: resultFormData.term,
+      subjects: [...resultFormData.subjects],
+      average: parseFloat(average),
+      remark: remark
+    };
+    
+    if (existingIndex !== -1) {
+      appState.results[existingIndex] = newResult;
+    } else {
+      appState.results.push(newResult);
+    }
+    
+    showResultModal = false;
+    selectedStudentForResult = null;
+    resultFormData = { term: '', subjects: [{ name: '', score: 0, grade: '' }] };
+    alert("✅ Results saved successfully!");
+    updateUI();
+  }
+  
+  function handleStudentLogout() {
+    isStudentLoggedIn = false;
+    currentStudent = null;
+    updateUI();
+  }
+  
+  function handleAdminLogin(username, pwd) {
+    if (username === 'admin' && pwd === 'scc2024') {
+      isLoggedIn = true;
+      showAdminLoginModal = false;
+      activeDashboardTab = 'overview';
+      updateUI();
+      return true;
+    } else { alert('Invalid credentials. Use admin / scc2024'); return false; }
+  }
+  
+  function handleLogout() { isLoggedIn = false; updateUI(); }
+  
+  // CRUD operations
+  function addStudent(student) { appState.students.push({ id: Date.now(), ...student }); updateUI(); }
+  function deleteStudent(id) { appState.students = appState.students.filter(s => s.id !== id); updateUI(); }
+  function addTeacher(teacher) { appState.teachers.push({ id: Date.now(), ...teacher }); updateUI(); }
+  function deleteTeacher(id) { appState.teachers = appState.teachers.filter(t => t.id !== id); updateUI(); }
+  function addNews(item) { appState.news.push({ id: Date.now(), ...item }); updateUI(); }
+  function deleteNews(id) { appState.news = appState.news.filter(n => n.id !== id); updateUI(); }
+  function addEvent(ev) { appState.events.push({ id: Date.now(), ...ev }); updateUI(); }
+  function deleteEvent(id) { appState.events = appState.events.filter(e => e.id !== id); updateUI(); }
+  function deleteApplication(id) { appState.applications = appState.applications.filter(a => a.id !== id); updateUI(); }
+  function addGalleryItem(title, category) { appState.gallery.push({ id: Date.now(), title, category }); updateUI(); }
+  function deleteGalleryItem(id) { appState.gallery = appState.gallery.filter(g => g.id !== id); updateUI(); }
+  function updateSettings(settings) { appState.settings = { ...appState.settings, ...settings }; updateUI(); }
+  
+  function handleApplicationSubmit(e) {
+    e.preventDefault();
+    const newApp = { 
+      id: Date.now(), 
+      ...applicationFormData, 
+      status: 'Pending', 
+      appliedDate: new Date().toISOString().slice(0,10) 
+    };
+    appState.applications.push(newApp);
+    applicationFormData = { name: '', dob: '', class: '', parentContact: '', email: '' };
+    alert('✅ Application submitted successfully! You will receive student code upon approval.');
+    updateUI();
+  }
+  
+  function toggleAssignmentSubmission(assignmentId) {
+    const assignment = appState.assignments.find(a => a.id === assignmentId);
+    if (assignment && assignment.studentId === currentStudent?.id) {
+      assignment.submitted = !assignment.submitted;
+      updateUI();
+    }
+  }
+  
+  function scrollToSection(sectionId) {
+    const el = document.getElementById(sectionId);
+    if (el) { el.scrollIntoView({ behavior: 'smooth' }); activeSection = sectionId; updateUI(); }
+  }
+  
+  // ==================== RENDER FUNCTIONS ====================
+  
+  function renderPublicWebsite() {
+    return `
+      <div class="bg-white">
+        <header class="sticky top-0 z-50 bg-white shadow-md">
+          <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="scrollToSection('home')">
+              <div class="bg-green-800 text-[#c9a84c] p-2 rounded-full"><i data-lucide="shield" class="w-8 h-8"></i></div>
+              <div><h1 class="font-playfair text-xl font-bold text-green-800">St. Columba's College</h1><p class="text-xs text-gray-600">Amaimo, Ikeduru LGA, Imo State</p></div>
+            </div>
+            <div class="hidden md:flex space-x-6 items-center">
+              ${['Home','About','Academics','Admissions','News & Events','Gallery','Contact'].map(item => `<button onclick="scrollToSection('${item.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}')" class="text-gray-700 hover:text-green-700 transition">${item}</button>`).join('')}
+              <button onclick="openStudentLoginModal()" class="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700 transition"><i data-lucide="graduation-cap" class="w-4 h-4 inline mr-1"></i> Student Portal</button>
+              <button onclick="openAdminLoginModal()" class="border border-green-800 text-green-800 px-4 py-2 rounded hover:bg-green-800 hover:text-white transition">Admin Login</button>
+            </div>
+            <button class="md:hidden" onclick="toggleMobileMenu()"><i data-lucide="${mobileMenuOpen ? 'x' : 'menu'}"></i></button>
+          </div>
+          ${mobileMenuOpen ? `<div class="md:hidden bg-white p-4 shadow flex flex-col space-y-2">${['Home','About','Academics','Admissions','News & Events','Gallery','Contact'].map(item => `<button onclick="scrollToSection('${item.toLowerCase().replace(/ & /g, '-').replace(/ /g, '-')}'); toggleMobileMenu()" class="text-left py-2 border-b">${item}</button>`).join('')}<button onclick="openStudentLoginModal(); toggleMobileMenu()" class="text-left py-2 text-blue-600 font-semibold">Student Portal</button><button onclick="openAdminLoginModal(); toggleMobileMenu()" class="text-left py-2 text-green-800 font-semibold">Admin Login</button></div>` : ''}
+        </header>
+
+        <section id="home" class="relative bg-gradient-to-r from-green-900 to-green-700 text-white py-24">
+          <div class="container mx-auto px-4 text-center"><h2 class="font-playfair text-5xl md:text-6xl font-bold mb-4">Nurturing Excellence, Building Character</h2><p class="text-xl mb-8">St. Columba's College, Amaimo — Ikeduru LGA, Imo State, Nigeria</p><div class="space-x-4"><button onclick="scrollToSection('admissions')" class="bg-[#c9a84c] text-green-900 px-8 py-3 rounded font-bold hover:bg-[#b38f3a]">Apply Now</button><button onclick="scrollToSection('about')" class="border-2 border-white px-8 py-3 rounded font-bold hover:bg-white hover:text-green-900">Learn More</button></div></div>
+        </section>
+
+        <section id="about" class="py-16 bg-gray-50"><div class="container mx-auto px-4"><h2 class="font-playfair text-3xl font-bold text-center mb-12">About Our School</h2><div class="grid md:grid-cols-2 gap-12"><div><p class="mb-4">Founded in 1998, St. Columba's College has been a beacon of academic excellence in Ikeduru LGA.</p><p><strong>Motto:</strong> Knowledge and Virtue<br><strong>Vision:</strong> To raise God-fearing leaders.<br><strong>Mission:</strong> Quality education for holistic development.</p><div class="flex flex-wrap gap-4 mt-6"><span class="bg-green-100 text-green-800 px-3 py-1 rounded-full">Discipline</span><span class="bg-green-100 text-green-800 px-3 py-1 rounded-full">Excellence</span><span class="bg-green-100 text-green-800 px-3 py-1 rounded-full">Faith</span></div></div><div class="bg-white p-6 rounded-lg shadow"><div class="flex items-center mb-4"><i data-lucide="user" class="h-12 w-12 text-green-600 mr-4"></i><div><h3 class="font-bold">Principal's Welcome</h3><p class="text-sm">Rev. Fr. Dr. Michael Nwosu</p></div></div><p>"At St. Columba's, we nurture excellence and build character for a brighter future."</p></div></div></div></section>
+
+        <section id="admissions" class="py-16 bg-gray-50"><div class="container mx-auto px-4"><h2 class="font-playfair text-3xl font-bold text-center mb-12">Admissions</h2><div class="grid md:grid-cols-2 gap-12"><div><h3 class="font-bold text-xl mb-4">Admission Process</h3><ol class="list-decimal pl-6"><li>Submit application form</li><li>Entrance examination</li><li>Interview</li><li>Approval & Student Code generation</li></ol><div class="mt-6"><h4 class="font-bold">Important Dates</h4><p>Application Deadline: August 31, 2024</p></div></div><div class="bg-white p-6 rounded-lg shadow"><h3 class="font-bold text-xl mb-4">Apply Now</h3><form id="applyForm"><input type="text" id="appName" placeholder="Full Name" class="w-full border p-2 mb-3 rounded" required><input type="date" id="appDob" class="w-full border p-2 mb-3 rounded" required><select id="appClass" class="w-full border p-2 mb-3 rounded" required><option>Select Class</option><option>JSS 1</option><option>JSS 2</option><option>JSS 3</option><option>SSS 1</option><option>SSS 2</option><option>SSS 3</option></select><input type="email" id="appEmail" placeholder="Email Address" class="w-full border p-2 mb-3 rounded" required><input type="tel" id="appContact" placeholder="Parent/Guardian Phone" class="w-full border p-2 mb-3 rounded" required><button type="submit" class="w-full bg-green-600 text-white py-2 rounded font-bold">Submit Application</button></form></div></div></div></section>
+        
+        <section id="statistics" class="py-16 bg-green-800 text-white"><div class="container mx-auto px-4 text-center"><div class="grid grid-cols-2 md:grid-cols-4 gap-8"><div><div class="text-4xl font-bold" id="counterYears">${counters.years}</div><div>Years of Excellence</div></div><div><div class="text-4xl font-bold" id="counterStudents">${counters.students}</div><div>Students</div></div><div><div class="text-4xl font-bold" id="counterTeachers">${counters.teachers}</div><div>Teachers</div></div><div><div class="text-4xl font-bold" id="counterPass">${counters.passRate}%</div><div>Pass Rate</div></div></div></div></section>
+
+        <footer class="bg-green-900 text-white py-8"><div class="container mx-auto px-4 text-center"><p>© ${new Date().getFullYear()} St. Columba's College, Amaimo. All rights reserved.</p></div></footer>
+      </div>
+      ${showAdminLoginModal ? renderAdminModal() : ''}
+      ${showStudentLoginModal ? renderStudentLoginModal() : ''}
+    `;
+  }
+
+  function renderStudentLoginModal() {
+    return `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]"><div class="bg-white p-8 rounded-lg w-96"><div class="text-center mb-4"><i data-lucide="graduation-cap" class="w-12 h-12 text-green-600 mx-auto"></i><h2 class="text-2xl font-bold mt-2">Student Portal Login</h2><p class="text-sm text-gray-600 mt-2">Login with your Student Code (same as password)</p></div><form id="studentLoginForm"><input type="text" id="studentCode" placeholder="Student Code (e.g., CHINEDU2024)" class="w-full border p-2 mb-3 rounded" required><input type="password" id="studentPassword" placeholder="Password (same as Student Code)" class="w-full border p-2 mb-3 rounded" required><div class="flex justify-end space-x-2"><button type="button" onclick="closeStudentLoginModal()" class="px-4 py-2 border rounded">Cancel</button><button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Login</button></div></form><div class="mt-4 text-xs text-gray-500 text-center">After application approval, you'll receive your unique Student Code via email.</div></div></div>`;
+  }
+
+  function renderAdminModal() {
+    return `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]"><div class="bg-white p-8 rounded-lg w-96"><h2 class="text-2xl font-bold mb-4">Admin Login</h2><form id="adminLoginForm"><input type="text" id="adminUser" placeholder="Username" class="w-full border p-2 mb-3 rounded"><input type="password" id="adminPass" placeholder="Password" class="w-full border p-2 mb-3 rounded"><div class="flex justify-end space-x-2"><button type="button" onclick="closeAdminModal()" class="px-4 py-2 border rounded">Cancel</button><button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Login</button></div></form></div></div>`;
+  }
+
+  function renderAdminDashboard() {
+    const pendingApps = appState.applications.filter(a => a.status === 'Pending');
+    return `
+      <div class="min-h-screen bg-gray-100 flex">
+        <div class="w-64 bg-green-800 text-white flex flex-col">
+          <div class="p-4 border-b border-green-700"><i data-lucide="shield" class="inline mr-2"></i> Admin Portal</div>
+          <nav class="flex-1 p-4 space-y-2">
+            <button onclick="setAdminTab('overview')" class="w-full text-left px-3 py-2 rounded ${activeDashboardTab === 'overview' ? 'bg-green-700' : 'hover:bg-green-700'}"><i data-lucide="layout-dashboard" class="inline mr-2 w-4 h-4"></i> Overview</button>
+            <button onclick="setAdminTab('applications')" class="w-full text-left px-3 py-2 rounded ${activeDashboardTab === 'applications' ? 'bg-green-700' : 'hover:bg-green-700'}"><i data-lucide="users" class="inline mr-2 w-4 h-4"></i> Applications (${pendingApps.length})</button>
+            <button onclick="setAdminTab('students')" class="w-full text-left px-3 py-2 rounded ${activeDashboardTab === 'students' ? 'bg-green-700' : 'hover:bg-green-700'}"><i data-lucide="graduation-cap" class="inline mr-2 w-4 h-4"></i> Students</button>
+            <button onclick="setAdminTab('results')" class="w-full text-left px-3 py-2 rounded ${activeDashboardTab === 'results' ? 'bg-green-700' : 'hover:bg-green-700'}"><i data-lucide="bar-chart-2" class="inline mr-2 w-4 h-4"></i> Results</button>
+            <button onclick="setAdminTab('teachers')" class="w-full text-left px-3 py-2 rounded ${activeDashboardTab === 'teachers' ? 'bg-green-700' : 'hover:bg-green-700'}"><i data-lucide="users" class="inline mr-2 w-4 h-4"></i> Teachers</button>
+            <button onclick="setAdminTab('news')" class="w-full text-left px-3 py-2 rounded ${activeDashboardTab === 'news' ? 'bg-green-700' : 'hover:bg-green-700'}"><i data-lucide="newspaper" class="inline mr-2 w-4 h-4"></i> News</button>
+          </nav>
+          <button onclick="handleLogout()" class="m-4 p-2 bg-red-600 rounded">Logout</button>
+        </div>
+        <div class="flex-1 p-6 overflow-auto">${renderAdminContent()}</div>
+      </div>
+      ${showResultModal ? renderResultModal() : ''}
+    `;
+  }
+
+  function renderAdminContent() {
+    if (activeDashboardTab === 'overview') {
+      return `<div><h2 class="text-2xl font-bold mb-4">Dashboard</h2><div class="grid grid-cols-3 gap-4"><div class="bg-white p-4 rounded shadow"><h3>Total Students</h3><p class="text-3xl font-bold">${appState.students.length}</p></div><div class="bg-white p-4 rounded shadow"><h3>Pending Apps</h3><p class="text-3xl font-bold">${appState.applications.filter(a => a.status === 'Pending').length}</p></div><div class="bg-white p-4 rounded shadow"><h3>Teachers</h3><p class="text-3xl font-bold">${appState.teachers.length}</p></div></div></div>`;
+    }
+    if (activeDashboardTab === 'applications') {
+      return `<div><h2 class="text-2xl font-bold mb-4">Applications</h2><div class="bg-white rounded shadow overflow-hidden">${appState.applications.map(app => `
+        <div class="p-4 border-b flex justify-between items-center"><div><p class="font-bold">${app.name}</p><p class="text-sm">${app.class} | ${app.email} | ${app.status}</p></div><div>${app.status === 'Pending' ? `<button onclick="approveApplication(${JSON.stringify(app).replace(/"/g, '&quot;')})" class="bg-green-600 text-white px-3 py-1 rounded mr-2">Approve</button><button onclick="rejectApplication(${app.id})" class="bg-red-600 text-white px-3 py-1 rounded">Reject</button>` : `<span class="px-3 py-1 rounded ${app.status === 'Approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${app.status}</span>`}</div></div>
+      `).join('')}</div></div>`;
+    }
+    if (activeDashboardTab === 'students') {
+      return `<div><h2 class="text-2xl font-bold mb-4">Students</h2><div class="bg-white rounded shadow overflow-hidden"><table class="w-full"><thead class="bg-gray-50"><tr><th class="p-2">Name</th><th>Class</th><th>Student Code</th><th>Actions</th></tr></thead><tbody>${appState.students.map(s => `<tr class="border-t"><td class="p-2">${s.name}</td><td>${s.class}</td><td class="font-mono text-sm">${s.studentCode}</td><td><button onclick="deleteStudent(${s.id})" class="text-red-600"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td></tr>`).join('')}</tbody></table></div></div>`;
+    }
+    if (activeDashboardTab === 'results') {
+      return `<div><h2 class="text-2xl font-bold mb-4">Student Results Management</h2><div class="grid gap-4">${appState.students.map(s => `
+        <div class="bg-white p-4 rounded shadow flex justify-between items-center"><div><p class="font-bold">${s.name}</p><p class="text-sm">${s.class} | Code: ${s.studentCode}</p></div><button onclick="openResultModal(${JSON.stringify(s).replace(/"/g, '&quot;')})" class="bg-green-600 text-white px-4 py-2 rounded">Upload/Edit Results</button></div>
+      `).join('')}</div></div>`;
+    }
+    if (activeDashboardTab === 'teachers') {
+      return `<div><h2 class="text-2xl font-bold mb-4">Teachers</h2><button onclick="addTeacher({name:prompt('Name'), subject:prompt('Subject'), qualification:prompt('Qualification')})" class="bg-green-600 text-white px-3 py-1 rounded mb-4">+ Add Teacher</button><div class="bg-white rounded shadow">${appState.teachers.map(t => `<div class="p-3 border-b">${t.name} - ${t.subject}</div>`).join('')}</div></div>`;
+    }
+    if (activeDashboardTab === 'news') {
+      return `<div><h2 class="text-2xl font-bold mb-4">News</h2><button onclick="addNews({title:prompt('Title'), date:new Date().toISOString().slice(0,10), excerpt:prompt('Excerpt'), image:'📰'})" class="bg-green-600 text-white px-3 py-1 rounded mb-4">+ Add News</button><div class="bg-white rounded shadow">${appState.news.map(n => `<div class="p-3 border-b">${n.title} - ${n.date}</div>`).join('')}</div></div>`;
+    }
+    return '';
+  }
+
+  function renderResultModal() {
+    return `<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] overflow-y-auto"><div class="bg-white p-6 rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto"><h2 class="text-2xl font-bold mb-4">Manage Results: ${selectedStudentForResult?.name}</h2><div class="mb-4"><label class="block font-bold">Term</label><input type="text" id="resultTerm" value="${resultFormData.term}" class="border p-2 w-full rounded" onchange="resultFormData.term = this.value"></div><div class="mb-4"><h3 class="font-bold mb-2">Subjects</h3>${resultFormData.subjects.map((sub, idx) => `
+          <div class="flex gap-2 mb-2"><input type="text" placeholder="Subject" value="${sub.name}" class="border p-2 rounded flex-1" onchange="updateSubject(${idx}, 'name', this.value)"><input type="number" placeholder="Score" value="${sub.score}" class="border p-2 rounded w-24" onchange="updateSubject(${idx}, 'score', this.value)"><input type="text" placeholder="Grade" value="${sub.grade}" class="border p-2 rounded w-20 bg-gray-100" readonly></div>
+        `).join('')}<button onclick="addSubjectToResult()" class="text-blue-600 text-sm">+ Add Subject</button></div><div class="flex justify-end gap-2"><button onclick="showResultModal = false; updateUI()" class="px-4 py-2 border rounded">Cancel</button><button onclick="saveStudentResult()" class="px-4 py-2 bg-green-600 text-white rounded">Save Results</button></div></div></div>`;
+  }
+
+  function renderStudentPortal() {
+    const studentResults = appState.results.filter(r => r.studentId === currentStudent.id);
+    const studentAssignments = appState.assignments.filter(a => a.studentId === currentStudent.id);
+    const studentAttendance = appState.attendance.filter(a => a.studentId === currentStudent.id);
+    const attendanceRate = studentAttendance.length > 0 ? (studentAttendance.filter(a => a.status === 'Present').length / studentAttendance.length * 100).toFixed(0) : 0;
+    
+    return `
+      <div class="min-h-screen bg-gray-100">
+        <div class="bg-green-800 text-white shadow-lg p-4"><div class="container mx-auto flex justify-between items-center"><div><i data-lucide="graduation-cap" class="inline mr-2"></i><span class="font-bold">Student Portal</span> | ${currentStudent.name} (${currentStudent.studentCode})</div><button onclick="handleStudentLogout()" class="bg-red-600 px-4 py-2 rounded">Logout</button></div></div>
+        <div class="container mx-auto px-6 py-8">
+          <div class="flex gap-2 mb-6 border-b pb-2 flex-wrap">
+            <button onclick="setStudentTab('dashboard')" class="px-4 py-2 rounded ${studentPortalTab === 'dashboard' ? 'bg-green-600 text-white' : 'bg-white'}">Dashboard</button>
+            <button onclick="setStudentTab('results')" class="px-4 py-2 rounded ${studentPortalTab === 'results' ? 'bg-green-600 text-white' : 'bg-white'}">My Results</button>
+            <button onclick="setStudentTab('assignments')" class="px-4 py-2 rounded ${studentPortalTab === 'assignments' ? 'bg-green-600 text-white' : 'bg-white'}">Assignments</button>
+            <button onclick="setStudentTab('attendance')" class="px-4 py-2 rounded ${studentPortalTab === 'attendance' ? 'bg-green-600 text-white' : 'bg-white'}">Attendance</button>
+            <button onclick="setStudentTab('profile')" class="px-4 py-2 rounded ${studentPortalTab === 'profile' ? 'bg-green-600 text-white' : 'bg-white'}">Profile</button>
+          </div>
+          
+          ${studentPortalTab === 'dashboard' ? `
+            <div class="grid md:grid-cols-3 gap-6 mb-8"><div class="bg-white p-6 rounded shadow"><i data-lucide="award" class="text-green-600"></i><p>Current Average</p><p class="text-2xl font-bold">${studentResults[0]?.average || 'N/A'}%</p></div><div class="bg-white p-6 rounded shadow"><i data-lucide="check-circle"></i><p>Assignments</p><p class="text-2xl font-bold">${studentAssignments.filter(a => a.submitted).length}/${studentAssignments.length}</p></div><div class="bg-white p-6 rounded shadow"><i data-lucide="calendar"></i><p>Attendance</p><p class="text-2xl font-bold">${attendanceRate}%</p></div></div>
+          ` : ''}
+          
+          ${studentPortalTab === 'results' ? `<div class="bg-white p-6 rounded shadow">${studentResults.map(r => `<div class="mb-6"><h3 class="font-bold text-lg">${r.term}</h3><table class="w-full border"><thead><tr><th>Subject</th><th>Score</th><th>Grade</th></tr></thead><tbody>${r.subjects.map(s => `<tr><td>${s.name}</td><td>${s.score}</td><td>${s.grade}</td></tr>`).join('')}</tbody></table><p class="mt-2 text-right">Average: ${r.average}% | ${r.remark}</p></div>`).join('')}</div>` : ''}
+          
+          ${studentPortalTab === 'assignments' ? `<div class="bg-white p-6 rounded shadow">${studentAssignments.map(a => `<div class="border-b p-3"><p class="font-bold">${a.title}</p><p>Due: ${a.dueDate}</p><button onclick="toggleAssignmentSubmission(${a.id})" class="mt-2 px-3 py-1 rounded ${a.submitted ? 'bg-gray-300' : 'bg-green-600 text-white'}">${a.submitted ? '✓ Submitted' : 'Mark Submitted'}</button></div>`).join('')}</div>` : ''}
+          
+          ${studentPortalTab === 'attendance' ? `<div class="bg-white p-6 rounded shadow"><div class="grid grid-cols-5 gap-2">${studentAttendance.map(day => `<div class="text-center p-2 rounded ${day.status === 'Present' ? 'bg-green-100' : 'bg-red-100'}">${day.date.slice(5)}<br>${day.status === 'Present' ? '✓' : '✗'}</div>`).join('')}</div><p class="mt-4 text-center">Overall: ${attendanceRate}%</p></div>` : ''}
+          
+          ${studentPortalTab === 'profile' ? `<div class="bg-white p-6 rounded shadow"><p><strong>Name:</strong> ${currentStudent.name}</p><p><strong>Admission No:</strong> ${currentStudent.admissionNo}</p><p><strong>Student Code:</strong> ${currentStudent.studentCode}</p><p><strong>Class:</strong> ${currentStudent.class}</p><p><strong>Email:</strong> ${currentStudent.email}</p></div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Global handlers
+  window.scrollToSection = scrollToSection;
+  window.toggleMobileMenu = () => { mobileMenuOpen = !mobileMenuOpen; updateUI(); };
+  window.openAdminLoginModal = () => { showAdminLoginModal = true; updateUI(); };
+  window.openStudentLoginModal = () => { showStudentLoginModal = true; updateUI(); };
+  window.closeAdminModal = () => { showAdminLoginModal = false; updateUI(); };
+  window.closeStudentLoginModal = () => { showStudentLoginModal = false; updateUI(); };
+  window.handleLogout = handleLogout;
+  window.handleStudentLogout = handleStudentLogout;
+  window.setAdminTab = (tab) => { activeDashboardTab = tab; updateUI(); };
+  window.setStudentTab = (tab) => { studentPortalTab = tab; updateUI(); };
+  window.approveApplication = approveApplication;
+  window.rejectApplication = rejectApplication;
+  window.deleteStudent = deleteStudent;
+  window.deleteTeacher = deleteTeacher;
+  window.deleteNews = deleteNews;
+  window.deleteEvent = deleteEvent;
+  window.addTeacher = addTeacher;
+  window.addNews = addNews;
+  window.openResultModal = openResultModal;
+  window.addSubjectToResult = addSubjectToResult;
+  window.updateSubject = updateSubject;
+  window.saveStudentResult = saveStudentResult;
+  window.toggleAssignmentSubmission = toggleAssignmentSubmission;
+  
+  function attachGlobalEventListeners() {
+    const adminForm = document.getElementById('adminLoginForm');
+    if (adminForm) adminForm.onsubmit = (e) => { e.preventDefault(); handleAdminLogin(document.getElementById('adminUser').value, document.getElementById('adminPass').value); };
+    const studentForm = document.getElementById('studentLoginForm');
+    if (studentForm) studentForm.onsubmit = (e) => { e.preventDefault(); handleStudentLogin(document.getElementById('studentCode').value, document.getElementById('studentPassword').value); };
+    const applyForm = document.getElementById('applyForm');
+    if (applyForm) applyForm.onsubmit = (e) => { e.preventDefault(); applicationFormData = { name: document.getElementById('appName').value, dob: document.getElementById('appDob').value, class: document.getElementById('appClass').value, parentContact: document.getElementById('appContact').value, email: document.getElementById('appEmail').value }; handleApplicationSubmit(e); };
+  }
+  
+  function init() { updateUI(); }
+  init();
+</script>
+</body>
+</html>
